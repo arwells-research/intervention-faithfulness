@@ -1,259 +1,277 @@
-Method invariants (non-negotiable)
-I1) Purely empirical, model-agnostic
+# METHODS — Intervention Faithfulness & Continuation Fracture (v0.1)
 
-The diagnostic uses only measured trials.
+This document defines the **method-level invariants** and **operational meaning**
+of the Intervention Faithfulness diagnostic implemented in this repository.
 
-No simulation, no microscopic assumptions, no curve fitting required.
+It is authoritative for **what the method claims**, **what it does not claim**,
+and **what must never change without a breaking revision**.
 
-I2) The target is intervention faithfulness of a reduced state representation
+---
 
-We test whether a chosen mapping 
-𝑠
-𝑡
-=
-𝑅
-(
-𝑦
-0
-:
-𝑡
-)
-s
-t
-	​
+## Method Invariants (Non-Negotiable)
 
-=R(y
-0:t
-	​
+These invariants define the scientific contract of the tool.
 
-) is sufficient to support prediction under intervention.
+### I1) Purely empirical, model-agnostic
 
-The state can be “whatever the model interface currently uses” (state_* columns).
+The diagnostic operates **only on measured trial data**.
 
-I3) What is being tested is distributional invariance, not determinism
+- No simulation is required
+- No microscopic physical assumptions are made
+- No curve fitting or parametric modeling is assumed
 
-The criterion is: for histories 
-ℎ
-1
-,
-ℎ
-2
-h
-1
-	​
+The method evaluates **observed conditional outcome distributions** under intervention.
 
-,h
-2
-	​
+---
 
- that collapse to the same reduced state, the conditional continuation distributions under the same intervention must match.
+### I2) The target is intervention faithfulness of a reduced state representation
 
-This defuses “stochasticity” objections: randomness is fine if the conditional distribution is invariant.
+We test whether a chosen reduced state representation is sufficient to support
+**prediction under intervention**.
 
-I4) Continuation fracture is a regime-dependent signature of representational collapse
+Formally, a reduced state is any mapping of past observations:
 
-Fracture is not “noise” or “non-Markovianity in general.”
+```
+s_t = R(y_0:t)
+```
 
-It is the empirical signature that the reduction collapsed histories that are continuation-relevant under intervention.
+In practice, this corresponds to the columns prefixed with `state_*`
+in the canonical trials table.
 
-I5) The primary output is operational, not interpretive
+The reduced state may be:
+- whatever a controller exposes,
+- whatever a simulator uses internally,
+- whatever a learned model reports at its interface.
 
-Faithfulness maps + safe envelope + certificate are meant to answer:
+The method does **not** require the state to be “correct” — only that it be
+**faithful under intervention**.
 
-“When is my state good enough?”
+---
 
-“Where does it fail?”
+### I3) What is tested is distributional invariance, not determinism
 
-“What minimal augmentation restores validity?”
+The criterion is **not** whether outcomes are deterministic.
 
-Canonical data contract (what the core assumes)
+For histories `h₁, h₂` that collapse to the same reduced state `s`,
+and for the same intervention `I`:
 
-Your collaborator’s plugin-layer proposal matches the method perfectly:
+```
+P(y | h₁, I)  ≈  P(y | h₂, I)
+```
 
-Required
+Randomness is allowed.
 
-trial_id
+Stochastic systems pass **if and only if** the conditional distributions
+are invariant under the reduction.
 
-intervention_id (categorical or numeric)
+This explicitly defuses “the system is noisy” objections.
 
-outcome (scalar; vector later if needed)
+---
 
-state_* columns (the candidate reduced state)
+### I4) Continuation fracture is a regime-dependent signature of representational collapse
 
-Optional
+Continuation fracture is **not**:
+- noise,
+- generic non-Markovianity,
+- lack of determinism.
 
-history_* columns (full-history descriptors / engineered features / labels)
+It is the empirical signature that the reduced state representation
+**collapsed histories that are continuation-relevant under intervention**.
 
-Invariant: the core operates on this canonical table. Everything else is adapters.
+Fracture is:
+- local (regime-dependent),
+- conditional (state × intervention),
+- observable only through intervention.
 
-Metrics (what “fracture” means, in v0.1 terms)
+---
 
-You have two conceptions now; both are consistent with the original METHODS:
+### I5) The primary output is operational, not interpretive
 
-M1) Refinement fracture (state vs history refinement)
+The tool is designed to answer:
 
-Interpretation: “how much additional predictive structure exists inside the collapsed state when you condition on a finer key.”
+- **When is my state representation good enough?**
+- **Where does it fail?**
+- **What minimal augmentation restores validity?**
 
-Compare 
-𝑃
-(
-𝑦
-∣
-𝑠
-,
-𝐼
-)
-P(y∣s,I) vs 
-𝑃
-(
-𝑦
-∣
-ℎ
-,
-𝐼
-)
-P(y∣h,I) where 
-ℎ
-h refines 
-𝑠
-s.
+Outputs (maps, envelopes, certificates) are **engineering artifacts**,
+not explanations of underlying mechanisms.
 
-This matches your initial implementation style (state_key vs history_key refinement).
+---
 
-M2) Pairwise fracture (within-state pairwise divergence)
+## Canonical Data Contract
 
-Interpretation: “do different history classes inside the same state yield different continuation distributions?”
+The core diagnostic operates on a single canonical table.
 
-For a given 
-𝑠
-,
-𝐼
-s,I, sample pairs of history classes 
-ℎ
-𝑖
-,
-ℎ
-𝑗
-⊂
-𝐻
-(
-𝑠
-)
-h
-i
-	​
+Everything else (file formats, plugins, loaders) is an adapter.
 
-,h
-j
-	​
+### Required columns
 
-⊂H(s) and compute 
-𝐷
-(
-𝑃
-(
-𝑦
-∣
-ℎ
-𝑖
-,
-𝐼
-)
- 
-∥
- 
-𝑃
-(
-𝑦
-∣
-ℎ
-𝑗
-,
-𝐼
-)
-)
-D(P(y∣h
-i
-	​
+- `trial_id`
+- `intervention_id` (categorical or numeric)
+- `outcome` (scalar in v0.1)
+- One or more `state_*` columns
 
-,I)∥P(y∣h
-j
-	​
+### Optional columns
 
-,I)).
+- `history_*` columns  
+  Full-history descriptors, engineered features, or labels used for refinement.
 
-This matches your “pairwise fracture implementation cleanly” track and the n_pairwise_pairs knob.
+### Invariant
 
-Invariant: both are legal operationalizations of “continuation fracture,” and the paper can present one as primary and the other as robustness.
+> **The core operates exclusively on this canonical table.**
 
-Recommendations (minimal completion) invariants
-R1) Recommendations are repair suggestions, not causal explanations
+No other schema is assumed.
 
-They propose state augmentation candidates that reduce fracture.
+---
 
-They do not claim “this is the true microscopic state.”
+## Metrics: What “Fracture” Means (v0.1)
 
-R2) Two modes
+Two equivalent operationalizations are supported.
 
-Single: rank individual candidate features by fracture reduction 
-Δ
-𝐹
-ΔF.
+Both are consistent with the original method definition.
 
-Greedy/sets: rank small sets of features that jointly reduce fracture (your rank_minimal_completion_sets path).
+---
 
-R3) A valid “negative control” behavior exists
+### M1) Refinement Fracture (State vs History Refinement)
+
+**Interpretation:**  
+“How much additional predictive structure exists inside the collapsed state
+when conditioning on a finer key?”
+
+Compare:
+
+```
+P(y | s, I)    vs    P(y | h, I)
+```
+
+where `h` refines `s`.
+
+This matches the original **state-key vs history-key refinement** formulation.
+
+---
+
+### M2) Pairwise Fracture (Within-State Pairwise Divergence)
+
+**Interpretation:**  
+“Do different history classes inside the same state yield different
+continuation distributions?”
+
+For a fixed `(s, I)`:
+
+- sample pairs of histories `hᵢ, hⱼ ⊂ H(s)`
+- compute divergence:
+
+```
+D( P(y | hᵢ, I)  ||  P(y | hⱼ, I) )
+```
+
+This matches the **pairwise fracture** implementation and supports
+bounded sampling via `n_pairwise_pairs`.
+
+---
+
+### Metric Invariant
+
+Both M1 and M2 are valid operationalizations of **continuation fracture**.
+
+The paper may present one as primary and the other as robustness;
+the tool supports both.
+
+---
+
+## Recommendations (Minimal Completion) Invariants
+
+### R1) Recommendations are repair suggestions, not causal explanations
+
+Recommended features are **augmentation candidates** that reduce fracture.
+
+They do **not** claim:
+- physical truth,
+- microscopic relevance,
+- causal primacy.
+
+---
+
+### R2) Two recommendation modes
+
+- **Single-feature ranking**  
+  Rank candidate features by fracture reduction `ΔF`.
+
+- **Greedy / set-based search**  
+  Identify small feature sets that jointly reduce fracture.
+
+Both modes are bounded and auditable.
+
+---
+
+### R3) Valid negative-control behavior exists
 
 In a faithful regime, the recommender should often return:
 
-empty or near-zero deltas,
+- empty results,
+- near-zero deltas,
+- explicit “no action needed”.
 
-“no action needed” (or low-confidence suggestions).
-This is part of the scientific contract that the method isn’t a fishing expedition.
+This is a required property, not a failure mode.
 
-Maps / envelope / certificate invariants
-V1) Faithfulness maps are “boundary of validity” views
+---
 
-Grid over (x,y) axes (intervention strength, history depth/feature, etc.).
+## Maps, Safe Envelope, and Certificates
 
-Color is fracture or normalized faithfulness.
+### V1) Faithfulness maps are boundary-of-validity views
 
-V2) Safe envelope is a summary of the map, not a new metric
+Maps visualize fracture (or normalized faithfulness) over a 2D grid,
+such as intervention strength × history depth.
 
-It reduces the 2D grid into human-actionable segments: safe / unsafe / uncertain.
+They are **diagnostic aids**, not decision engines.
 
-“Uncertain” is explicitly underpowered (min_samples or NaN).
+---
 
-V3) Certificates must be auditable artifacts
+### V2) Safe envelope is a summary, not a new metric
 
-Include hashes of trials table + diagnosis record.
+The safe envelope reduces the map into segments:
 
-Export bundle should contain:
+- **Safe**
+- **Unsafe**
+- **Uncertain** (explicitly underpowered or NaN)
 
-diagnosis JSON
+It does not introduce new statistical meaning.
 
-certificate JSON (curated payload)
+---
 
-optional PDF/HTML certificate
+### V3) Certificates must be auditable artifacts
 
-map image(s)
+A certificate must include:
 
-any metadata/config provenance
+- diagnosis JSON
+- curated certificate JSON
+- hashes of trials and diagnosis
+- configuration and provenance
 
-Phase structure for the paper (the A→B→C→D→E arc)
+Certificates are designed to be **rerunnable and verifiable**.
 
-This is the minimum “section header skeleton” implied by your dialog:
+---
 
-Recognized failure mode (protocol dependence / regime dependence)
+## Paper Structure Implied by the Method
 
-Method: invariance of conditional continuation distributions
+Minimum section arc:
 
-Metric: continuation fracture + significance + sample warnings
+1. Recognized failure mode (protocol / regime dependence)
+2. Method: invariance of conditional continuation distributions
+3. Metric: continuation fracture + significance + power warnings
+4. Repair: minimal completion (single + greedy)
+5. Operationalization: maps → envelope → certificate
+6. Validation of the validator (negative controls)
 
-Repair: minimal completion (single + greedy sets)
+This structure supports nanowires as a canonical example
+while remaining a general methods paper.
 
-Operationalization: maps → safe envelope → certificate
+---
 
-Validation of the validator: negative control regime
+## Final Invariant (Pin This)
 
-This keeps nanowires as “canonical positive case” while remaining a general methods paper.
+> **We are not predicting the future.**  
+> **We are testing whether the future predicted by a reduced model  
+> is invariant under intervention.**
+
+Any change that weakens this statement is a breaking change.
