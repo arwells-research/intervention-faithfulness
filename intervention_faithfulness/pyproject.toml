@@ -1,0 +1,92 @@
+# pyproject.toml (v0.1)
+#
+# Repo name: intervention-faithfulness
+# Import/package name: intervention_faithfulness
+#
+# This file is intentionally conservative. We can expand later (entry-points plugins, docs build, CI, etc.)
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intervention-faithfulness"
+version = "0.1.0"
+description = "Empirical certification of model validity under intervention (intervention-faithfulness diagnostics)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "A. R. Wells", email = "arwells.research@proton.me" }
+]
+keywords = [
+  "diagnostic",
+  "non-markovian",
+  "intervention",
+  "state-representation",
+  "model-validation",
+  "superconducting",
+  "nanowire",
+  "josephson",
+  "robustness"
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries"
+]
+
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "scipy>=1.10",
+  "matplotlib>=3.7"
+]
+
+[project.scripts]
+faithfulness = "intervention_faithfulness.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/arwells-research-group/intervention-faithfulness"
+Repository = "https://github.com/arwells-research-group/intervention-faithfulness"
+Issues = "https://github.com/arwells-research-group/intervention-faithfulness/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["intervention_faithfulness*"]
+
+# Optional: if you later add non-.py data files inside the package.
+# [tool.setuptools.package-data]
+# intervention_faithfulness = ["py.typed", "templates/*.html", "templates/*.css"]
+
+# Optional (v0.2+): entry-point plugin discovery
+# We are NOT enabling this yet to keep v0.1 simple.
+#
+# [project.entry-points."intervention_faithfulness.data_plugins"]
+# nanowire_switching = "intervention_faithfulness.plugins.data.nanowire_switching:NanowireSwitchingPlugin"
+#
+# [project.entry-points."intervention_faithfulness.feature_plugins"]
+# integrated_current = "intervention_faithfulness.plugins.features.integrated_current:IntegratedCurrentFeature"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]

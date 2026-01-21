@@ -1,0 +1,84 @@
+# -----------------------------
+# intervention-faithfulness
+# .gitignore (v0.1)
+# -----------------------------
+CONTRIBUTING.md
+RELEASE_CHECKLIST.md
+
+# --- Python / venv ---
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# --- Packaging / build artifacts ---
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Local outputs / run artifacts ---
+# Keep committed docs and tools, but ignore generated outputs.
+tools/outputs/
+out/
+outputs/
+reports/
+*.log
+
+# --- Data ---
+# Keep the directory, ignore local/generated trial CSVs by default.
+data/*.csv
+
+# If you later add small, canonical fixtures that SHOULD be versioned,
+# put them under tests/fixtures/ (not ignored).
+tests/fixtures/
+
+# --- PDFs / rendered certificates ---
+*.pdf
+*.html
+
+# --- LaTeX build products (you keep METHODS.tex) ---
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+
+# --- Safety: stray scratch / backups ---
+*.bak
+*.tmp
+*_broken.py
+

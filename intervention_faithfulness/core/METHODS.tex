@@ -1,0 +1,198 @@
+\section{Methods}
+
+\subsection{Overview}
+
+We introduce an empirical diagnostic for \emph{intervention faithfulness} of state
+representations. Given repeated experimental trials under controlled interventions,
+the method evaluates whether a practitioner’s reduced state preserves predictive
+validity \emph{under intervention}, using only measured data.
+The diagnostic is model-agnostic: it assumes no microscopic dynamics, requires no
+simulation, and performs no curve fitting.
+
+The method detects \emph{Continuation Fracture}: a regime in which distinct empirical
+histories that map to the same reduced state yield statistically distinct future
+outcomes under the same intervention. Continuation fracture identifies an
+\emph{unfaithful cut}—a state representation that may be observationally adequate
+during nominal operation but becomes intervention-invalid in fractured regimes.
+
+Crucially, the diagnostic does not test determinism. It tests invariance of
+\emph{conditional outcome distributions}. Stochastic systems can be fully faithful
+provided their continuation distributions remain invariant given the reduced state
+and intervention.
+
+\subsection{Data requirements and canonical trial representation}
+
+The method operates on datasets of repeated trials containing:
+\begin{itemize}
+\item \textbf{Measurement history} $y_{0:t}$: measured observables up to time $t$
+(e.g.\ switching events, switching currents, time-to-switch, voltage traces).
+\item \textbf{Intervention label} $I$: a discrete or continuous descriptor of the
+applied control operation (e.g.\ ramp rate, pulse sequence, bias shift).
+\item \textbf{Outcome} $y_{\mathrm{future}}$: measured outcomes following the
+intervention over a fixed observation window.
+\end{itemize}
+
+The diagnostic does not require that raw high-frequency histories be stored directly
+within the analysis table. In practice, $y_{0:t}$ may be represented by
+pre-computed summary statistics, engineered features, or references (pointers) to
+external data objects, provided that histories can be grouped consistently.
+
+All analyses are performed on a canonical \emph{trials table} with columns:
+\begin{itemize}
+\item required: \texttt{trial\_id}, \texttt{intervention\_id}, \texttt{outcome}
+\item reduced state variables: \texttt{state\_*}
+\item optional history or completion variables: \texttt{history\_*}
+\end{itemize}
+
+This normalized representation enables pipeline-agnostic analysis while remaining
+compatible with domain-specific preprocessing.
+
+\subsection{Candidate reduced state}
+
+Let $R$ denote a candidate reduced state mapping
+\begin{equation}
+s_t = R(y_{0:t}).
+\end{equation}
+This mapping reflects the practitioner’s current model interface (e.g.\ instantaneous
+current, voltage, temperature, control setpoints). The diagnostic evaluates whether
+$s_t$ is sufficient for predicting future behavior under intervention.
+
+\subsection{Free evolution and active intervention regimes}
+
+To maximize diagnostic sensitivity, data may be partitioned into:
+\begin{enumerate}
+\item a \textbf{free evolution (nominal) regime}, where reduced models are typically
+expected to perform well, and
+\item an \textbf{active intervention regime}, in which deliberate protocol changes
+(e.g.\ fast ramps, pulses, flux shifts) probe whether the reduced state preserves
+admissible continuations.
+\end{enumerate}
+
+Continuation fracture is assessed in the active intervention regime, optionally
+conditional on equivalence under free evolution.
+
+\subsection{History equivalence classes}
+
+For a fixed reduced state value $s$, define the equivalence class of empirical histories
+\begin{equation}
+H(s) = \{\, h \equiv y_{0:t} \mid R(h) \in \mathcal{B}(s) \,\},
+\end{equation}
+where $\mathcal{B}(s)$ denotes a bin or neighborhood of $s$.
+For continuous-valued states, equivalence classes are constructed using discretization
+or kernel-based partitioning.
+
+Each $h \in H(s)$ represents a distinct empirical history that the reduced model treats
+as equivalent.
+
+\subsection{Empirical continuation distributions}
+
+For each history $h \in H(s)$ and intervention $I$, we estimate the empirical
+continuation distribution
+\begin{equation}
+P_h(y_{\mathrm{future}} \mid I),
+\end{equation}
+from repeated trials sharing the same history class and intervention. Estimation is
+performed directly from data using standard empirical procedures appropriate to the
+outcome modality.
+
+\subsection{Continuation invariance and the unfaithful cut}
+
+A reduced state is \emph{intervention-faithful} under intervention $I$ if and only if,
+for all $h_1,h_2 \in H(s)$, the corresponding continuation distributions are
+\emph{statistically indistinguishable}:
+\begin{equation}
+P_{h_1}(y_{\mathrm{future}} \mid I)
+\;\approx\;
+P_{h_2}(y_{\mathrm{future}} \mid I).
+\end{equation}
+
+Statistically significant violations of this condition constitute an
+\emph{unfaithful cut}: the reduced state collapses histories that support distinct
+admissible continuations under intervention.
+
+\subsection{Continuation fracture metrics}
+
+Continuation fracture is quantified using distributional divergences.
+
+\paragraph{Pairwise fracture.}
+\begin{equation}
+F_{\mathrm{pair}}(s,I)
+=
+\mathbb{E}_{h_1 \neq h_2 \in H(s)}
+\left[
+D\!\left(
+P_{h_1}(y_{\mathrm{future}} \mid I)
+\;\|\;
+P_{h_2}(y_{\mathrm{future}} \mid I)
+\right)
+\right].
+\end{equation}
+
+\paragraph{Refinement fracture.}
+Alternatively, treating history labels as a refinement of the reduced state, we compute
+the expected divergence between continuation distributions induced by refined partitions.
+This provides a stable complementary estimate.
+
+\paragraph{Divergence measures and tail restriction.}
+We recommend Jensen–Shannon divergence as a bounded, symmetric default; Wasserstein
+distance when outcomes lie in a metric space; and KL divergence only when distributions
+are well-sampled and smooth.
+
+To emphasize rare but operationally critical events, fracture may be computed using
+\emph{tail-restricted} outcomes, retaining only values above a quantile
+$q$ (e.g.\ $q \ge 0.95$). This enables detection of regime-dependent failures that occur
+predominantly in the tails, such as safety-critical or reliability-limiting events.
+
+\paragraph{Interpretation.}
+$F \approx 0$ indicates intervention faithfulness; $F>0$ indicates continuation
+fracture. Larger $F$ corresponds to greater untracked history or sector structure.
+
+\subsection{Statistical significance and power}
+
+Significance is assessed using permutation tests over history labels. The method enforces
+minimum sample thresholds per equivalence class and labels underpowered regions as
+\emph{uncertain} rather than falsely faithful or fractured.
+
+\subsection{Minimal completion and feature ranking}
+
+To identify missing state structure, candidate history features $\{z^{(k)}\}$—measured
+but excluded from the reduced state—are evaluated by augmenting
+\begin{equation}
+\tilde{s}^{(k)}_t = (s_t, z^{(k)}).
+\end{equation}
+
+The fracture reduction is
+\begin{equation}
+\Delta F(k) = F(s_t,I) - F(\tilde{s}^{(k)}_t,I).
+\end{equation}
+
+Features are ranked by $\Delta F$. When no single feature suffices, greedy selection of
+small feature sets identifies minimal joint completions. The method does not infer
+unmeasured variables; it identifies which available measurements should be elevated to
+state status.
+
+\subsection{Boundary-of-validity mapping and safe envelope}
+
+For parameterized intervention families $I(\lambda)$ and a secondary axis $d$
+(e.g.\ history depth), fracture is evaluated on a grid $F(\lambda,d)$.
+Visualization yields a \emph{faithfulness map} partitioning regimes into faithful,
+fractured, and underpowered regions.
+
+These maps are summarized into a \emph{safe operating envelope}, providing an operational
+certificate of model validity under intervention.
+
+\subsection{Negative controls}
+
+To demonstrate specificity, we include negative control regimes in which reduced models
+are known to be reliable. Under identical analysis, the method yields $F \approx 0$,
+stable bright regions in faithfulness maps, and null completion recommendations. This
+demonstrates that continuation fracture is a regime-dependent signature of
+representational collapse, not a generic artifact of stochastic variability.
+
+\subsection{Implementation and reproducibility}
+
+All quantities are empirically estimated from measured data. Computational cost scales
+linearly with dataset size up to bounded pairwise sampling and grid evaluation.
+The method produces reproducible artifacts including diagnosis records, curated
+certificates, faithfulness maps, safe envelopes, and cryptographic hashes for audit
+traceability.
